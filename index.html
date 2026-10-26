@@ -467,14 +467,26 @@
 
       // Подключим запуск генерации через бота
       // после настройки Telegram Mini App.
-      button.disabled = true;
+      
+button.addEventListener("click", () => {
+  const link =
+    "https://t.me/masterskayapedagogabot?start=template_" +
+    template.id;
+
+  if (window.Telegram?.WebApp?.openTelegramLink) {
+    window.Telegram.WebApp.openTelegramLink(link);
+  } else {
+    window.location.href = link;
+  }
+});
+
 
       detail.appendChild(button);
       detail.appendChild(
         makeElement(
           "div",
           "notice",
-          "Витрина готова к просмотру. Создание изображения через Telegram-бота подключим следующим этапом."
+          "Нажмите кнопку выше. Бот откроет выбранный шаблон и задаст необходимые вопросы."
         )
       );
     }
