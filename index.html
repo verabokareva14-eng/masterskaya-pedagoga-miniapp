@@ -1,0 +1,536 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Мастерская Педагога</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #f8f6ff;
+      --card: #ffffff;
+      --ink: #29243b;
+      --muted: #827b95;
+      --accent: #8156df;
+      --soft: #eee7ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Arial, sans-serif;
+    }
+
+    .app {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 22px 16px 42px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin: 9px 0 8px;
+      line-height: 1.15;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 0 0 22px;
+    }
+
+    .search {
+      width: 100%;
+      border: 1px solid #e5def5;
+      border-radius: 16px;
+      background: white;
+      padding: 15px 17px;
+      font-size: 15px;
+      outline: none;
+      margin-bottom: 20px;
+    }
+
+    .search:focus {
+      border-color: var(--accent);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .tile {
+      background: var(--card);
+      border: 1px solid #eee9f7;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 5px 16px rgba(61, 37, 110, .05);
+      cursor: pointer;
+      text-align: left;
+      padding: 0;
+      color: inherit;
+      font: inherit;
+    }
+
+    .tile:active {
+      transform: scale(.98);
+    }
+
+    .tile img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      background: #eee7ff;
+    }
+
+    .placeholder {
+      aspect-ratio: 1 / 1;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #e9dcff, #ffe3ed);
+      font-size: 48px;
+    }
+
+    .tile-content {
+      padding: 12px;
+    }
+
+    .tile-title {
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .tile-desc {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+      margin-top: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .back {
+      border: 0;
+      background: var(--soft);
+      color: var(--accent);
+      padding: 11px 15px;
+      border-radius: 13px;
+      font-weight: 700;
+      margin-bottom: 18px;
+      cursor: pointer;
+    }
+
+    .detail {
+      background: white;
+      border-radius: 22px;
+      padding: 16px;
+    }
+
+    .detail img {
+      width: 100%;
+      border-radius: 16px;
+      object-fit: contain;
+      max-height: 420px;
+      background: var(--bg);
+    }
+
+    .detail h2 {
+      margin: 18px 0 8px;
+      font-size: 23px;
+    }
+
+    .detail p {
+      line-height: 1.65;
+      color: #60596f;
+      white-space: pre-wrap;
+    }
+
+    .button {
+      width: 100%;
+      padding: 16px;
+      background: var(--accent);
+      border: 0;
+      color: white;
+      font-size: 16px;
+      font-weight: 800;
+      border-radius: 15px;
+      margin-top: 15px;
+    }
+
+    .button:disabled {
+      background: #b7aacd;
+      cursor: not-allowed;
+    }
+
+    .notice {
+      background: #f0eaff;
+      padding: 13px;
+      border-radius: 14px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #6b548f;
+      margin-top: 14px;
+    }
+
+    .empty {
+      padding: 32px 12px;
+      text-align: center;
+      color: var(--muted);
+      line-height: 1.6;
+      grid-column: 1 / -1;
+    }
+
+    .error {
+      color: #a23c55;
+    }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="eyebrow">Творчество • Образование • Вдохновение</div>
+    <h1 id="heading">Мастерская Педагога</h1>
+    <p class="subtitle" id="subtitle">Выберите категорию и откройте мир творческих шаблонов</p>
+
+    <button id="back" class="back hidden">← Назад</button>
+
+    <input
+      id="search"
+      class="search"
+      type="search"
+      placeholder="Поиск категорий..."
+      autocomplete="off"
+    >
+
+    <div id="grid" class="grid">
+      <div class="empty">Загружаем витрину...</div>
+    </div>
+
+    <div id="detail" class="detail hidden"></div>
+  </main>
+
+  <script>
+    // НАСТРОЙКИ SUPABASE
+    // Заменить только две строки ниже.
+    const SUPABASE_URL = "ВСТАВЬ_АДРЕС_ПРОЕКТА";
+    const SUPABASE_KEY = "ВСТАВЬ_PUBLISHABLE_KEY";
+
+    const tg = window.Telegram?.WebApp;
+
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    const heading = document.getElementById("heading");
+    const subtitle = document.getElementById("subtitle");
+    const back = document.getElementById("back");
+    const search = document.getElementById("search");
+    const grid = document.getElementById("grid");
+    const detail = document.getElementById("detail");
+
+    let categories = [];
+    let templates = [];
+    let currentCategory = null;
+    let currentTemplate = null;
+
+    function makeElement(tag, className, text) {
+      const el = document.createElement(tag);
+      if (className) el.className = className;
+      if (text !== undefined) el.textContent = text;
+      return el;
+    }
+
+    function showError(message) {
+      grid.replaceChildren(
+        makeElement("div", "empty error", message)
+      );
+    }
+
+    function showEmpty(message) {
+      grid.replaceChildren(
+        makeElement("div", "empty", message)
+      );
+    }
+
+    async function request(table, params) {
+      const url =
+        SUPABASE_URL.replace(/\/$/, "") +
+        "/rest/v1/" + table + "?" + params;
+
+      const response = await fetch(url, {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Accept": "application/json"
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          "Ошибка получения данных: " + response.status
+        );
+      }
+
+      return response.json();
+    }
+
+    function addImage(parent, url, fallback) {
+      if (url && /^https:\/\//i.test(url)) {
+        const img = document.createElement("img");
+        img.src = url;
+        img.alt = fallback;
+        img.loading = "lazy";
+        img.onerror = () => {
+          img.replaceWith(
+            makeElement("div", "placeholder", "🎨")
+          );
+        };
+        parent.appendChild(img);
+      } else {
+        parent.appendChild(
+          makeElement("div", "placeholder", "🎨")
+        );
+      }
+    }
+
+    function makeTile(title, description, imageUrl, onClick) {
+      const tile = makeElement("button", "tile");
+      tile.type = "button";
+
+      addImage(tile, imageUrl, title);
+
+      const content = makeElement("div", "tile-content");
+      content.appendChild(
+        makeElement("div", "tile-title", title)
+      );
+
+      if (description) {
+        content.appendChild(
+          makeElement("div", "tile-desc", description)
+        );
+      }
+
+      tile.appendChild(content);
+      tile.addEventListener("click", onClick);
+
+      return tile;
+    }
+
+    function setScreen(title, description, canGoBack) {
+      heading.textContent = title;
+      subtitle.textContent = description;
+      back.classList.toggle("hidden", !canGoBack);
+      detail.classList.add("hidden");
+      grid.classList.remove("hidden");
+      search.classList.remove("hidden");
+      search.value = "";
+    }
+
+    function renderCategories() {
+      const query = search.value.trim().toLowerCase();
+
+      const filtered = categories.filter(category =>
+        (category.name || "").toLowerCase().includes(query) ||
+        (category.description || "").toLowerCase().includes(query)
+      );
+
+      grid.replaceChildren();
+
+      if (!filtered.length) {
+        showEmpty("Категории не найдены.");
+        return;
+      }
+
+      filtered.forEach(category => {
+        grid.appendChild(makeTile(
+          category.name || "Без названия",
+          category.description || "",
+          category.image_url,
+          () => openCategory(category)
+        ));
+      });
+    }
+
+    function renderTemplates() {
+      const query = search.value.trim().toLowerCase();
+
+      const filtered = templates.filter(template =>
+        template.category === currentCategory.name &&
+        (
+          (template.title || "").toLowerCase().includes(query) ||
+          (template.description || "").toLowerCase().includes(query)
+        )
+      );
+
+      grid.replaceChildren();
+
+      if (!filtered.length) {
+        showEmpty("В этой категории пока нет шаблонов.");
+        return;
+      }
+
+      filtered.forEach(template => {
+        grid.appendChild(makeTile(
+          template.title || "Без названия",
+          template.description || "",
+          template.thumbnail_url,
+          () => openTemplate(template)
+        ));
+      });
+    }
+
+    function openHome() {
+      currentCategory = null;
+      currentTemplate = null;
+
+      setScreen(
+        "Мастерская Педагога",
+        "Выберите категорию и откройте мир творческих шаблонов",
+        false
+      );
+
+      search.placeholder = "Поиск категорий...";
+      renderCategories();
+    }
+
+    function openCategory(category) {
+      currentCategory = category;
+      currentTemplate = null;
+
+      setScreen(
+        category.name,
+        "Выберите шаблон для творчества",
+        true
+      );
+
+      search.placeholder = "Поиск шаблонов...";
+      renderTemplates();
+    }
+
+    function openTemplate(template) {
+      currentTemplate = template;
+
+      heading.textContent = currentCategory.name;
+      subtitle.textContent = "Выбранный шаблон";
+      back.classList.remove("hidden");
+      search.classList.add("hidden");
+      grid.classList.add("hidden");
+      detail.classList.remove("hidden");
+
+      detail.replaceChildren();
+
+      if (template.thumbnail_url) {
+        addImage(
+          detail,
+          template.thumbnail_url,
+          template.title
+        );
+      }
+
+      detail.appendChild(
+        makeElement("h2", "", template.title)
+      );
+
+      detail.appendChild(
+        makeElement(
+          "p",
+          "",
+          template.description || "Описание пока не добавлено."
+        )
+      );
+
+      const button = makeElement(
+        "button",
+        "button",
+        "Создать изображение"
+      );
+
+      // Подключим запуск генерации через бота
+      // после настройки Telegram Mini App.
+      button.disabled = true;
+
+      detail.appendChild(button);
+      detail.appendChild(
+        makeElement(
+          "div",
+          "notice",
+          "Витрина готова к просмотру. Создание изображения через Telegram-бота подключим следующим этапом."
+        )
+      );
+    }
+
+    back.addEventListener("click", () => {
+      if (currentTemplate) {
+        openCategory(currentCategory);
+      } else {
+        openHome();
+      }
+    });
+
+    search.addEventListener("input", () => {
+      if (currentCategory) {
+        renderTemplates();
+      } else {
+        renderCategories();
+      }
+    });
+
+    async function init() {
+      if (
+        SUPABASE_URL.startsWith("ВСТАВЬ_") ||
+        SUPABASE_KEY.startsWith("ВСТАВЬ_")
+      ) {
+        showError(
+          "Необходимо указать адрес Supabase и Publishable Key в настройках приложения."
+        );
+        return;
+      }
+
+      try {
+        const results = await Promise.all([
+          request(
+            "categories",
+            "select=id,name,image_url,description,sort_order&order=sort_order.asc,name.asc"
+          ),
+          request(
+            "templates",
+            "select=id,title,category,thumbnail_url,description&is_published=eq.true&order=id.desc"
+          )
+        ]);
+
+        categories = results[0];
+        templates = results[1];
+
+        openHome();
+      } catch (error) {
+        console.error(error);
+        showError(
+          "Не удалось загрузить каталог. Проверьте подключение к Supabase и политики доступа."
+        );
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
